@@ -1,0 +1,6 @@
+name    'jhaals-warranty'
+version '0.0.1'
+author 'Johan Haals <johan.haals@gmail.com>'
+license 'Expat License'
+description 'Provides warranty information for Macintosh hardware'
+project_page 'https://github.com/JHaals/jhaals-warranty'
