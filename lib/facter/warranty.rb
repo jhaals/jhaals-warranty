@@ -1,4 +1,6 @@
 require 'net/https'
+require 'open-uri'
+require 'rexml/document'
 
 Facter.add('warranty') do
     confine :kernel => 'Darwin'
@@ -44,3 +46,26 @@ Facter.add('warranty') do
         warranty_status
     end
 end
+
+Facter.add('machine_type') do
+  confine :kernel => 'Darwin'
+
+  setcode do
+    if Facter.value(:sp_serial_number).length == 12
+      model_number = Facter.value(:sp_serial_number)[-4,4]
+    else
+      model_number = Facter.value(:sp_serial_number)[-3,3]
+    end
+
+    apple_xml_data = REXML::Document.new(open('http://support-sp.apple.com/sp/product?cc=' + model_number + '&lang=en_US').string)
+
+    apple_xml_data.root.elements.each do |element|
+      if element.name == 'configCode'
+        @machine_type = element.text
+      end
+    end
+
+    @machine_type
+  end
+end
+
