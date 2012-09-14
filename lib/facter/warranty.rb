@@ -3,48 +3,67 @@ require 'yaml'
 require 'open-uri'
 require 'rexml/document'
 
+def create_warranty_cache(cache)
+    # Setup HTTP connection
+    uri              = URI.parse('https://selfsolve.apple.com/wcResults.do')
+    http             = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl     = true
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    request          = Net::HTTP::Post.new(uri.request_uri)
+
+    # Prepare POST data
+    request.set_form_data(
+        {
+        'sn'       => Facter.value('sp_serial_number'),
+        'Continue' => 'Continue',
+        'cn'       => '',
+        'locale'   => '',
+        'caller'   => '',
+        'num'      => '0'
+    }
+    )
+
+    # POST data and get the response
+    response      = http.request(request)
+    response_data = response.body
+
+    # I apologize for this line
+    warranty_status = response_data.split('warrantyPage.warrantycheck.displayHWSupportInfo').last.split('Repairs and Service Coverage: ')[1] =~ /^Active/ ? true : false
+
+    # And this one too
+    expiration_date = response_data.split('Estimated Expiration Date: ')[1].split('<')[0] if warranty_status
+
+    File.open(cache, 'w') do |file|
+        YAML.dump({'warranty_status' => warranty_status, 'expiration_date' => expiration_date}, file)
+    end
+end
+
 Facter.add('warranty') do
     confine :kernel => 'Darwin'
     setcode do
-        # Setup HTTP connection
-        uri              = URI.parse('https://selfsolve.apple.com/wcResults.do')
-        http             = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl     = true
-        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        request          = Net::HTTP::Post.new(uri.request_uri)
 
-        # Prepare POST data
-        request.set_form_data(
-            {
-            'sn'       => Facter.value('sp_serial_number'),
-            'Continue' => 'Continue',
-            'cn'       => '',
-            'locale'   => '',
-            'caller'   => '',
-            'num'      => '0'
-        }
-        )
+        cache_file = '/var/db/.facter_warranty.fact'
 
-        # POST data and get the response
-        response      = http.request(request)
-        response_data = response.body
+        # refresh cache every week
+        if File.exists?(cache_file) and Time.now < File.stat(cache_file).mtime + 86400 * 7
+            Facter.debug('warranty cache: Valid')
+        else
+            Facter.debug('warranty cache: Outdated, recreating')
+            create_warranty_cache cache_file
+        end
+        cache = YAML::load_file cache_file
 
-        # I apologize for this line
-        warranty_status = response_data.split('warrantyPage.warrantycheck.displayHWSupportInfo').last.split('Repairs and Service Coverage: ')[1] =~ /^Active/ ? true : false
-
-        # And this one too
-        expiration_date = response_data.split('Estimated Expiration Date: ')[1].split('<')[0] if warranty_status
-
-        if warranty_status
+        if cache['warranty_status']
             # Add a new fact if there's warranty
             Facter.add('warranty_expiration') do
                 confine :kernel => "Darwin"
                 setcode do
-                    expiration_date
+                    cache['expiration_date']
                 end
             end
         end
-        warranty_status
+
+        cache['warranty_status']
     end
 end
 
@@ -70,15 +89,15 @@ end
 
 Facter.add('machine_type') do
   confine :kernel => 'Darwin'
-
   setcode do
+
     cache_file = '/var/db/.facter_machine_type.fact'
 
     # refresh cache every week
     if File.exists?(cache_file) and Time.now < File.stat(cache_file).mtime + 86400 * 7
-        Facter.debug('cache is fresh!')
+        Facter.debug('machine_type cache: Valid')
     else
-        Facter.debug('cache is not fresh, creating new one...')
+        Facter.debug('machine_type cache: Outdated, recreating')
         create_machine_type_cache cache_file
     end
 
