@@ -1,4 +1,5 @@
 require 'net/https'
+require 'yaml'
 require 'open-uri'
 require 'rexml/document'
 
@@ -47,25 +48,49 @@ Facter.add('warranty') do
     end
 end
 
+
+def create_machine_type_cache(cache)
+    File.open(cache, 'w') do |file|
+        if Facter.value(:sp_serial_number).length == 12
+            model_number = Facter.value(:sp_serial_number)[-4,4]
+        else
+            model_number = Facter.value(:sp_serial_number)[-3,3]
+        end
+
+        apple_xml_data = REXML::Document.new(open('http://support-sp.apple.com/sp/product?cc=' + model_number + '&lang=en_US').string)
+
+        apple_xml_data.root.elements.each do |element|
+            if element.name == 'configCode'
+                @machine_type = element.text
+            end
+        end
+        YAML.dump({'machine_type' => @machine_type}, file)
+    end
+end
+
 Facter.add('machine_type') do
   confine :kernel => 'Darwin'
 
   setcode do
-    if Facter.value(:sp_serial_number).length == 12
-      model_number = Facter.value(:sp_serial_number)[-4,4]
+    cache_file = '/var/db/.facter_machine_type.fact'
+
+    # refresh cache every week
+    if File.exists?(cache_file) and Time.now < File.stat(cache_file).mtime + 86400 * 7
+        Facter.debug('cache is fresh!')
     else
-      model_number = Facter.value(:sp_serial_number)[-3,3]
+        Facter.debug('cache is not fresh, creating new one...')
+        create_machine_type_cache cache_file
     end
 
-    apple_xml_data = REXML::Document.new(open('http://support-sp.apple.com/sp/product?cc=' + model_number + '&lang=en_US').string)
+    cache = YAML::load_file cache_file
 
-    apple_xml_data.root.elements.each do |element|
-      if element.name == 'configCode'
-        @machine_type = element.text
-      end
+    begin
+        cache['machine_type']
+    rescue NoMethodError
+        Facter.debug('fucked up cache, create new cache and die')
+        create_machine_type_cache cache_file
+        exit
     end
-
-    @machine_type
+    cache['machine_type']
   end
 end
-
