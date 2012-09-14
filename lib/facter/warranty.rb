@@ -44,8 +44,8 @@ Facter.add('warranty') do
 
         cache_file = '/var/db/.facter_warranty.fact'
 
-        # refresh cache every week
-        if File.exists?(cache_file) and Time.now < File.stat(cache_file).mtime + 86400 * 7
+        # refresh cache daily
+        if File.exists?(cache_file) and Time.now < File.stat(cache_file).mtime + 86400 * 1
             Facter.debug('warranty cache: Valid')
         else
             Facter.debug('warranty cache: Outdated, recreating')
