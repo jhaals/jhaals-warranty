@@ -53,13 +53,10 @@ Facter.add('warranty') do
         end
         cache = YAML::load_file cache_file
 
-        if cache['warranty_status']
-            # Add a new fact if there's warranty
-            Facter.add('warranty_expiration') do
-                confine :kernel => "Darwin"
-                setcode do
-                    cache['expiration_date']
-                end
+        Facter.add('warranty_expiration') do
+            confine :kernel => "Darwin"
+            setcode do
+                cache['expiration_date']
             end
         end
 
