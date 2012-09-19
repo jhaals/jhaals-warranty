@@ -64,6 +64,72 @@ Facter.add('warranty') do
     end
 end
 
+def create_dell_warranty_cache(cache)
+
+    warranty = 'Unknown'
+    expiration_date = 'Unknown'
+
+    begin
+        # rescue in case dell.com is down
+        uri = URI.parse("http://www.dell.com/support/troubleshooting/us/en/04/Index?c=us&s=bsd&cs=04&l=en&t=warranty&servicetag=#{Facter.value('serialnumber')}")
+        response = Net::HTTP.get_response(uri)
+    rescue
+    end
+
+    # Does the first match with html tags because there's multiple [days_left]
+    match_result = /<b>\[\d+\]<\/b>/.match(response.body)
+
+    if match_result
+        # match days left in match_result.
+        # I'm sorry for the ugly convertions, feel free to improve.
+        warranty = false
+        days_left = /\d+/.match(match_result.to_s).to_s
+        if days_left.to_i != 0
+            warranty = true
+            end_date = DateTime.now + days_left.to_i
+            expiration_date = end_date.strftime('%Y-%m-%d')
+        end
+    end
+    File.open(cache, 'w') do |file|
+        YAML.dump({'warranty_status' => true, 'expiration_date' => expiration_date}, file)
+    end
+end
+
+Facter.add('warranty') do
+    confine :kernel => 'Linux'
+    setcode do
+        warranty = 'Unsupported'
+        if Facter.value('manufacturer') !~ /Dell.*/
+            # Just support for dell so far... Contribute *hint*
+            next
+        end
+        if !Facter.value('serialnumber')
+            # We require serial(serviceTag)
+            next
+        end
+
+        cache_file = '/var/cache/.facter_warranty.fact'
+
+        # refresh cache daily
+        if File.exists?(cache_file) and Time.now < File.stat(cache_file).mtime + 86400 * 1
+            Facter.debug('warranty cache: Valid')
+        else
+            Facter.debug('warranty cache: Outdated, recreating')
+            create_dell_warranty_cache cache_file
+        end
+
+        cache = YAML::load_file cache_file
+
+        warranty = cache['warranty_status']
+
+        Facter.add('warranty_expiration') do
+            setcode do
+                cache['expiration_date']
+            end
+        end
+        warranty
+    end
+end
 
 def create_machine_type_cache(cache)
     File.open(cache, 'w') do |file|
