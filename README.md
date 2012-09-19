@@ -1,6 +1,13 @@
 Warranty
 --------
-This module provides additional warranty facts for Machintosh hardware.
+This module provides additional warranty facts.
+
+Supported Manufacturers
+
+* Machintosh
+* Dell
+
+Please contribute with for more manufacturers.
 
 Facts
 ---
@@ -10,7 +17,7 @@ Facts
 
 How?
 ---
-Warranty checks are being made against apples selfsolve website. The result get cached locally for 24 hours
+Warranty checks are being made against manufacturers website. The result get cached locally for 24 hours.
 
 
 The idea to this facter fact came from a warranty script Gary Larizza created.

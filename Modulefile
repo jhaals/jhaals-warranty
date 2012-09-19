@@ -1,5 +1,5 @@
 name    'jhaals-warranty'
-version '0.0.2'
+version '0.0.3'
 author 'Johan Haals <johan.haals@gmail.com>'
 license 'Expat License'
 description 'Provides warranty information for Macintosh hardware'
