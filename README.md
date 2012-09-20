@@ -6,6 +6,7 @@ Supported Manufacturers
 
 * Machintosh
 * Dell
+* Lenovo
 
 Please contribute with for more manufacturers.
 
