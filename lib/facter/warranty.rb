@@ -30,6 +30,7 @@ def create_dell_warranty_cache(cache)
       end_date = Time.parse(w['EndDate'])
       if end_date > Time.now()
         warranty = true
+        expiration_date = end_date.strftime("%Y-%m-%d")
       end
   end
   rescue
