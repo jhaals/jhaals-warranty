@@ -41,87 +41,87 @@ def create_dell_warranty_cache(cache)
   end
 end
 
-  def create_lenovo_warranty_cache(cache)
-    # Setup HTTP connection
-    uri              = URI.parse('http://support.lenovo.com/templatedata/Web%20Content/JSP/warrantyLookup.jsp')
-    http             = Net::HTTP.new(uri.host, uri.port)
-    request          = Net::HTTP::Post.new(uri.request_uri)
+def create_lenovo_warranty_cache(cache)
+  # Setup HTTP connection
+  uri              = URI.parse('http://support.lenovo.com/templatedata/Web%20Content/JSP/warrantyLookup.jsp')
+  http             = Net::HTTP.new(uri.host, uri.port)
+  request          = Net::HTTP::Post.new(uri.request_uri)
 
-    # Prepare POST data
-    request.set_form_data({ 'sysSerial' => Facter.value('serialnumber') })
+  # Prepare POST data
+  request.set_form_data({ 'sysSerial' => Facter.value('serialnumber') })
 
-    # POST data and get the response
-    response      = http.request(request)
-    response_data = response.body
-    warranty = false
-    if /Active/.match(response_data)
-      warranty = true
-    end
-
-    warranty_expiration = /\d{4}-\d{2}-\d{2}/.match(response_data)
-
-    File.open(cache, 'w') do |file|
-      YAML.dump({'warranty_status' => warranty, 'expiration_date' => warranty_expiration.to_s}, file)
-    end
+  # POST data and get the response
+  response      = http.request(request)
+  response_data = response.body
+  warranty = false
+  if /Active/.match(response_data)
+    warranty = true
   end
 
-  Facter.add('warranty') do
+  warranty_expiration = /\d{4}-\d{2}-\d{2}/.match(response_data)
+
+  File.open(cache, 'w') do |file|
+    YAML.dump({'warranty_status' => warranty, 'expiration_date' => warranty_expiration.to_s}, file)
+  end
+end
+
+Facter.add('warranty') do
+  confine :kernel => ['Linux', 'Windows']
+  setcode do
+    warranty = 'Unsupported'
+    if Facter.value('manufacturer').downcase !~ /(dell.*|lenovo)/
+      # Just support for dell so far... Contribute *hint*
+      next
+    end
+    if !Facter.value('serialnumber')
+      # We require serial(serviceTag)
+      next
+    end
+
+    if Facter.value('operatingsystem') == 'windows'
+      cache_file = 'C:\ProgramData\PuppetLabs\puppet\var\facts\facter_warranty.fact'
+    else
+      cache_file = '/var/cache/.facter_warranty.fact'
+    end
+
+    # refresh cache daily
+    if File.exists?(cache_file) and Time.now < File.stat(cache_file).mtime + 86400 * 1
+      Facter.debug('warranty cache: Valid')
+    else
+      Facter.debug('warranty cache: Outdated, recreating')
+
+      if Facter.value('manufacturer').downcase =~ /Dell.*/
+        create_dell_warranty_cache cache_file
+      else
+        create_lenovo_warranty_cache cache_file
+      end
+    end
+
+    cache = YAML::load_file cache_file
+
+    warranty = cache['warranty_status']
+    warranty
+  end
+end
+
+Facter.add('warranty_expiration') do
+  setcode do
     confine :kernel => ['Linux', 'Windows']
-    setcode do
-      warranty = 'Unsupported'
-      if Facter.value('manufacturer').downcase !~ /(dell.*|lenovo)/
-        # Just support for dell so far... Contribute *hint*
-        next
-      end
-      if !Facter.value('serialnumber')
-        # We require serial(serviceTag)
-        next
-      end
+    cache = ''
+    cache_file = ''
 
-      if Facter.value('operatingsystem') == 'windows'
-        cache_file = 'C:\ProgramData\PuppetLabs\puppet\var\facts\facter_warranty.fact'
-      else
-        cache_file = '/var/cache/.facter_warranty.fact'
-      end
-
-      # refresh cache daily
-      if File.exists?(cache_file) and Time.now < File.stat(cache_file).mtime + 86400 * 1
-        Facter.debug('warranty cache: Valid')
-      else
-        Facter.debug('warranty cache: Outdated, recreating')
-
-        if Facter.value('manufacturer').downcase =~ /Dell.*/
-          create_dell_warranty_cache cache_file
-        else
-          create_lenovo_warranty_cache cache_file
-        end
-      end
-
-      cache = YAML::load_file cache_file
-
-      warranty = cache['warranty_status']
-      warranty
+    case Facter.value('kernel')
+    when 'Linux'
+      cache_file = '/var/cache/.facter_warranty.fact'
+    when 'windows'
+      cache_file = 'C:\ProgramData\PuppetLabs\puppet\var\facts\facter_warranty.fact'
     end
+
+    if !File.exists?(cache_file)
+      next false
+    end
+
+    cache = YAML::load_file cache_file
+    cache['expiration_date']
   end
-
-    Facter.add('warranty_expiration') do
-      setcode do
-        confine :kernel => ['Linux', 'Windows']
-        cache = ''
-        cache_file = ''
-
-        case Facter.value('kernel')
-        when 'Linux'
-          cache_file = '/var/cache/.facter_warranty.fact'
-        when 'windows'
-          cache_file = 'C:\ProgramData\PuppetLabs\puppet\var\facts\facter_warranty.fact'
-        end
-
-        if !File.exists?(cache_file)
-          next false
-        end
-
-        cache = YAML::load_file cache_file
-        cache['expiration_date']
-      end
-    end
+end
