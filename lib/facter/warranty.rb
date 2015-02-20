@@ -90,7 +90,7 @@ Facter.add('warranty') do
     else
       Facter.debug('warranty cache: Outdated, recreating')
 
-      if Facter.value('manufacturer').downcase =~ /Dell.*/
+      if Facter.value('manufacturer').downcase =~ /dell.*/
         create_dell_warranty_cache cache_file
       else
         create_lenovo_warranty_cache cache_file
