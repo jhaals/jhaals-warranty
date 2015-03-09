@@ -7,7 +7,7 @@ require 'json'
 def create_dell_warranty_cache(cache)
 
   warranty = false
-  expiration_date = 'Unknown'
+  expiration_date = Time.parse('1901-01-01T00:00:00')
   servicetag = Facter.value('serialnumber')
 
   begin
@@ -28,16 +28,20 @@ def create_dell_warranty_cache(cache)
     ['GetAssetWarrantyResult'] \
     ['Response']['DellAsset']['Warranties']['Warranty'].each do |w|
       end_date = Time.parse(w['EndDate'])
-      if end_date > Time.now()
+      if expiration_date < end_date
         warranty = true
-        expiration_date = end_date.strftime("%Y-%m-%d")
+        expiration_date = end_date
       end
   end
   rescue
   end
 
+  if expiration_date > Time.now()
+    warranty = true
+  end
+
   File.open(cache, 'w') do |file|
-    YAML.dump({'warranty_status' => warranty, 'expiration_date' => expiration_date}, file)
+    YAML.dump({'warranty_status' => warranty, 'expiration_date' => expiration_date.strftime("%Y-%m-%d")}, file)
   end
 end
 
@@ -90,7 +94,7 @@ Facter.add('warranty') do
     else
       Facter.debug('warranty cache: Outdated, recreating')
 
-      if Facter.value('manufacturer').downcase =~ /Dell.*/
+      if Facter.value('manufacturer').downcase =~ /dell.*/
         create_dell_warranty_cache cache_file
       else
         create_lenovo_warranty_cache cache_file
