@@ -1,5 +1,5 @@
 name    'jhaals-warranty'
-version '0.0.5'
+version '0.0.6'
 author 'Johan Haals <johan.haals@gmail.com>'
 license 'Expat License'
 description 'Provides warranty information for Lenovo/Dell hardware'

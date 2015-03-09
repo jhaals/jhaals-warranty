@@ -36,9 +36,7 @@ def create_dell_warranty_cache(cache)
   rescue
   end
 
-  if expiration_date > Time.now()
-    warranty = true
-  end
+  warranty = true if expiration_date > Time.now()
 
   File.open(cache, 'w') do |file|
     YAML.dump({'warranty_status' => warranty, 'expiration_date' => expiration_date.strftime("%Y-%m-%d")}, file)
