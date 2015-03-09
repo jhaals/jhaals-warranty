@@ -1,0 +1,14 @@
+{
+  "name": "jhaals/warranty",
+  "version": "0.0.6",
+  "author": "jhaals",
+  "summary": "facter fact with warranty information for Dell/Lenovo hardware",
+  "license": "Apache 2.0",
+  "source": "https://github.com/jhaals/jhaals-warranty",
+  "project_page": "https://github.com/jhaals/jhaals-warranty",
+  "issues_url": "https://github.com/jhaals/jhaals-warranty/issues",
+  "dependencies": [
+    {"name":"puppetlabs-stdlib","version_requirement":">= 1.0.0"}
+  ]
+}
+
