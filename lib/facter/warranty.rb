@@ -70,15 +70,10 @@ end
 Facter.add('warranty') do
   confine :kernel => ['Linux', 'Windows']
   setcode do
-    warranty = 'Unsupported'
-    if Facter.value('manufacturer').downcase !~ /(dell.*|lenovo)/
-      # Just support for dell so far... Contribute *hint*
-      next
-    end
-    if !Facter.value('serialnumber')
-      # We require serial(serviceTag)
-      next
-    end
+    warranty ='Unsupported'
+    # Just support for dell/lenovo so far... Contribute *hint*
+    next if Facter.value('manufacturer').downcase !~ /(dell.*|lenovo)/
+    next if !Facter.value('serialnumber')
 
     if Facter.value('operatingsystem') == 'windows'
       cache_file = 'C:\ProgramData\PuppetLabs\puppet\var\facts\facter_warranty.fact'
@@ -100,9 +95,7 @@ Facter.add('warranty') do
     end
 
     cache = YAML::load_file cache_file
-
-    warranty = cache['warranty_status']
-    warranty
+    cache['warranty_status']
   end
 end
 
