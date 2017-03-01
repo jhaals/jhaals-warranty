@@ -16,13 +16,10 @@ def create_dell_warranty_cache(cache)
   start_date      = Time.now() # Push start time back and expiration forward
   servicetag      = Facter.value('serialnumber')
 
-  Facter.debug("create_dell_warranty_cache hit")
-
   begin
     # rescue in case dell.com is down
     dell_api_key     = File.read("/etc/dell_api_key") # Production API key needs to be grabbed from a file
     uri              = URI.parse("https://api.dell.com/support/assetinfo/v4/getassetwarranty/#{servicetag}?apikey=#{dell_api_key}")
-    Facter.debug("create_dell_warranty_cache URL is : " + uri.inspect)
     http             = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl     = true
     # TODO : Reject SSL failures
@@ -33,21 +30,12 @@ def create_dell_warranty_cache(cache)
   rescue
   end
 
-  Facter.debug("warranty result json : " + JSON.pretty_generate(r))
-  awr = r['AssetWarrantyResponse']
-  Facter.debug("warranty result 2 : " + JSON.pretty_generate(awr))
-  Facter.debug("warranty result 3a : " + JSON.pretty_generate(awr[0]))
-  Facter.debug("warranty result 3 : " + JSON.pretty_generate(awr[0]['AssetEntitlementData']))
 
   begin
     w = r['AssetWarrantyResponse'][0]['AssetEntitlementData']
-    Facter.debug("warranty array type : " + w.class.to_s)
-    Facter.debug("warranty array contents : " + w.inspect)
     w2 = w.ensure_array
-    Facter.debug("warranty hacked array contents : " + w2.inspect)
 
     w2.each do |h|
-      Facter.debug("warranty array elem contents : " + h.inspect)
       # Only allow ServiceLevelGroup 5 for support rather than "Dell Digital Delivery" or others?
       # TODO : Need a list of the ServiceLevelGroups and what they mean!
       if h['ServiceLevelGroup'] != 5
@@ -56,18 +44,14 @@ def create_dell_warranty_cache(cache)
       end
 
       new_expiration_date = Time.parse(h['EndDate'])
-      Facter.debug("warranty new_expiration_date : " + new_expiration_date.inspect)
       if expiration_date < new_expiration_date
         expiration_date = new_expiration_date
-        Facter.debug("warranty expiration_date updated to new_expiration_date : " + expiration_date.inspect)
       end
 
       # We also want the start date for reporting purposes
       new_start_date = Time.parse(h['StartDate'])
-      Facter.debug("warranty new_start_date : " + new_start_date.inspect)
       if new_start_date < start_date
         start_date = new_start_date
-        Facter.debug("warranty start_date updated to new_start_date : " + start_date.inspect)
       end
     end
   rescue
