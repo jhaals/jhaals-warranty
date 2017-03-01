@@ -5,7 +5,7 @@ This module provides additional warranty facts.
 Supported Manufacturers
 
 * Dell
-* Lenovo
+* Lenovo (no warranty_start support yet)
 
 Please contribute with for more manufacturers.
 
@@ -13,6 +13,7 @@ Facts
 ---
     warranty => true
     warranty_expiration => 2013-11-05
+    warranty_start => 2011-11-05
 
 How?
 ---
