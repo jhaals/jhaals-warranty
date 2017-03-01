@@ -57,7 +57,7 @@ def create_dell_warranty_cache(cache)
 
       new_expiration_date = Time.parse(h['EndDate'])
       Facter.debug("warranty new_expiration_date : " + new_expiration_date.inspect)
-      if expiration_date < new_expiration_date 
+      if expiration_date < new_expiration_date
         expiration_date = new_expiration_date
         Facter.debug("warranty expiration_date updated to new_expiration_date : " + expiration_date.inspect)
       end
@@ -66,7 +66,7 @@ def create_dell_warranty_cache(cache)
       new_start_date = Time.parse(h['StartDate'])
       Facter.debug("warranty new_start_date : " + new_start_date.inspect)
       if new_start_date < start_date
-        start_date = new_start_date 
+        start_date = new_start_date
         Facter.debug("warranty start_date updated to new_start_date : " + start_date.inspect)
       end
     end
