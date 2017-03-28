@@ -17,5 +17,4 @@ Facts
 
 How?
 ---
-Warranty checks are being made against manufacturers website. The result get cached locally for 24 hours.
-
+Warranty checks are being made against manufacturers website. The result get cached locally for 24 hours. You must obtain an API key from Dell via [TechDirect](https://techdirect.dell.com/certification/AboutAPIs.aspx).
