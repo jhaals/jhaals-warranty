@@ -1,6 +1,6 @@
 {
   "name": "jhaals/warranty",
-  "version": "0.0.6",
+  "version": "1.0.0",
   "author": "jhaals",
   "summary": "facter fact with warranty information for Dell/Lenovo hardware",
   "license": "Apache 2.0",
